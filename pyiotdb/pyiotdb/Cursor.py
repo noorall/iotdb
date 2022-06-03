@@ -21,7 +21,7 @@ class Cursor(object):
         self.__arraysize = 1
         self.__is_close = False
         self.__result = None
-        self.__rows = []
+        self.__rows = None
         self.__rowcount = -1
 
     @property
@@ -68,8 +68,8 @@ class Cursor(object):
                         resp.queryDataSet,
                         resp.ignoreTimeStamp,
                     ) as data_set:
-                        data = data_set.todf()
-                        self.__rows = data.values
+                        self.__result = data_set.todf()
+                        self.__rows = iter(self.__result.values.tolist())
             else:
                 raise ProgrammingError(resp.status.message)
             logger.debug(
@@ -77,3 +77,41 @@ class Cursor(object):
             )
         except TTransport.TException as e:
             raise RuntimeError("execution of non-query statement fails because: ", e)
+
+    def fetchone(self):
+        try:
+            return self.next()
+        except StopIteration:
+            return None
+
+    def fetchmany(self, count=None):
+        if count is None:
+            count = self.__arraysize
+        if count == 0:
+            return self.fetchall()
+        result = []
+        for i in range(count):
+            try:
+                result.append(self.next())
+            except StopIteration:
+                pass
+        return result
+
+    def fetchall(self):
+        result = []
+        iterate = True
+        while iterate:
+            try:
+                result.append(self.next())
+            except StopIteration:
+                iterate = False
+        return result
+
+    def next(self):
+        self.__result: SessionDataSet
+        if self.__result is None:
+            raise ProgrammingError("No result available!")
+        elif not self.__is_close:
+            return next(self.__rows)
+        else:
+            raise ProgrammingError("Cursor closed!")
