@@ -68,8 +68,18 @@ class Cursor(object):
                         resp.queryDataSet,
                         resp.ignoreTimeStamp,
                     ) as data_set:
-                        self.__result = data_set.todf()
-                        self.__rows = iter(self.__result.values.tolist())
+                        self.__result = {
+                            "col_names": data_set.get_column_names(),
+                            "col_types": data_set.get_column_types(),
+                            "rows": data_set.todf().values.tolist()
+                        }
+                else:
+                    self.__result = {
+                        "col_names": None,
+                        "col_types": None,
+                        "rows": []
+                    }
+                self.__rows = iter(self.__result["rows"])
             else:
                 raise ProgrammingError(resp.status.message)
             logger.debug(
@@ -115,3 +125,29 @@ class Cursor(object):
             return next(self.__rows)
         else:
             raise ProgrammingError("Cursor closed!")
+
+    __next__ = next
+
+    def close(self):
+        self.__is_close = True
+        self.__result.clear()
+
+    @property
+    def description(self):
+        if self.__is_close:
+            return
+
+        description = []
+
+        col_names = self.__result["col_names"]
+        col_types = self.__result["col_types"]
+
+        for i in range(len(col_names)):
+            description.append((col_names[i],
+                                col_types[i].value,
+                                None,
+                                None,
+                                None,
+                                None,
+                                col_names[i] == "Time"))
+        return tuple(description)
