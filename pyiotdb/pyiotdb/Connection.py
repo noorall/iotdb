@@ -11,25 +11,12 @@ from thrift.transport import TSocket, TTransport
 
 from .thrift.rpc.TSIService import (
     Client,
-    TSCreateTimeseriesReq,
-    TSCreateAlignedTimeseriesReq,
-    TSInsertRecordReq,
-    TSInsertStringRecordReq,
-    TSInsertTabletReq,
-    TSExecuteStatementReq,
     TSOpenSessionReq,
-    TSCreateMultiTimeseriesReq,
-    TSCloseSessionReq,
-    TSInsertTabletsReq,
-    TSInsertRecordsReq,
-    TSInsertRecordsOfOneDeviceReq,
+    TSCloseSessionReq
 )
 from .thrift.rpc.ttypes import (
-    TSDeleteDataReq,
     TSProtocolVersion,
-    TSSetTimeZoneReq,
-    TSRawDataQueryReq,
-    TSLastDataQueryReq,
+    TSSetTimeZoneReq
 )
 
 logger = logging.getLogger("IoTDB")
