@@ -9,3 +9,8 @@ __all__ = [
     connect,
     Error
 ]
+__version__ = "0.0.1"
+
+apilevel = "2.0"
+threadsafety = 2
+paramstyle = "pyformat"

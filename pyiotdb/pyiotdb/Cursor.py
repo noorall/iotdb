@@ -1,6 +1,6 @@
 import logging
 
-from iotdb.thrift.rpc.ttypes import TSExecuteStatementReq
+from iotdb.thrift.rpc.ttypes import TSExecuteStatementReq, TSExecuteBatchStatementReq
 from iotdb.thrift.rpc.ttypes import TSExecuteStatementResp
 from iotdb.utils.SessionDataSet import SessionDataSet
 from thrift.transport import TTransport
@@ -8,6 +8,7 @@ from thrift.transport import TTransport
 from .Exceptions import ProgrammingError
 
 logger = logging.getLogger("IoTDB")
+import warnings
 
 
 class Cursor(object):
@@ -25,6 +26,26 @@ class Cursor(object):
         self.__rowcount = -1
 
     @property
+    def description(self):
+        if self.__is_close:
+            return
+
+        description = []
+
+        col_names = self.__result["col_names"]
+        col_types = self.__result["col_types"]
+
+        for i in range(len(col_names)):
+            description.append((col_names[i],
+                                col_types[i].value,
+                                None,
+                                None,
+                                None,
+                                None,
+                                col_names[i] == "Time"))
+        return tuple(description)
+
+    @property
     def arraysize(self):
         return self.__arraysize
 
@@ -37,7 +58,9 @@ class Cursor(object):
 
     @property
     def rowcount(self):
-        return self.__rowcount
+        if self.__is_close or self.__result is None:
+            return -1
+        return len(self.__result.get("rows")) or -1
 
     def execute(self, operation, parameters=None):
         if self.__connection.is_close:
@@ -88,6 +111,29 @@ class Cursor(object):
         except TTransport.TException as e:
             raise RuntimeError("execution of non-query statement fails because: ", e)
 
+    def executemany(self, operation, seq_of_parameters=None):
+        if self.__connection.is_close:
+            raise ProgrammingError("Connection closed!")
+
+        if self.__is_close:
+            raise ProgrammingError("Cursor closed!")
+
+        sqls = []
+        if seq_of_parameters is None:
+            sqls.append(operation)
+        else:
+            for parameters in seq_of_parameters:
+                sqls.append(operation % parameters)
+
+        rows = []
+
+        for sql in sqls:
+            self.execute(sql)
+            rows.extend(self.__result["rows"])
+
+        self.__result["rows"] = rows
+        self.__rows = iter(self.__result["rows"])
+
     def fetchone(self):
         try:
             return self.next()
@@ -128,26 +174,10 @@ class Cursor(object):
 
     __next__ = next
 
+    def __iter__(self):
+        warnings.warn("DB-API extension cursor.__iter__() used")
+        return self
+
     def close(self):
         self.__is_close = True
-        self.__result.clear()
-
-    @property
-    def description(self):
-        if self.__is_close:
-            return
-
-        description = []
-
-        col_names = self.__result["col_names"]
-        col_types = self.__result["col_types"]
-
-        for i in range(len(col_names)):
-            description.append((col_names[i],
-                                col_types[i].value,
-                                None,
-                                None,
-                                None,
-                                None,
-                                col_names[i] == "Time"))
-        return tuple(description)
+        self.__result = None
