@@ -181,3 +181,9 @@ class Cursor(object):
     def close(self):
         self.__is_close = True
         self.__result = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
