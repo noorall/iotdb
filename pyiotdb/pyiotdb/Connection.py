@@ -32,14 +32,14 @@ class Connection(object):
         self,
         host,
         port,
-        user=DEFAULT_USER,
+        username=DEFAULT_USER,
         password=DEFAULT_PASSWORD,
         fetch_size=DEFAULT_FETCH_SIZE,
         zone_id=DEFAULT_ZONE_ID,
     ):
         self.__host = host
         self.__port = port
-        self.__user = user
+        self.__user = username
         self.__password = password
         self.__fetch_size = fetch_size
         self.__is_close = True
@@ -146,10 +146,10 @@ class Connection(object):
         self.__is_close = True
 
     def commit(self):
-        raise NotSupportedError("Commit operation is not supported!")
+        pass
 
     def rollback(self):
-        raise NotSupportedError("Rollback operation is not supported!")
+        pass
 
     def cursor(self):
         return Cursor(self, self.__client, self.__session_id, self.__statement_id)

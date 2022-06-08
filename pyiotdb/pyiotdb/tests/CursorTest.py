@@ -1,16 +1,47 @@
 import unittest
 
-from pyiotdb.pyiotdb import connect
+from pyiotdb import connect
 
 
 class CursorTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.conn = connect("127.0.0.1", "6667")
-        self.cur = self.conn.cursor()
 
     def test_executemany(self):
-        self.cur.executemany("select * from root.factory.room2.device1 where time > %s",[(1),(2),(3)])
-        for row in self.cur.fetchall():
+        cur = self.conn.cursor()
+        cur.executemany("select * from root.factory.room2.device1 where time > %s", [(1), (2), (3)])
+        for row in cur.fetchall():
             print(row)
-        print(self.cur.rowcount)
-        print(self.cur.description)
+        print(cur.rowcount)
+        print(cur.description)
+
+    def test_ddl(self):
+        cur = self.conn.cursor()
+        cur.execute("show storage group")
+        for row in cur.fetchall():
+            print(row)
+        print(cur.rowcount)
+        print(cur.description)
+
+    def test_storage_group(self):
+        cur = self.conn.cursor()
+        cur.execute("show storage group")
+        for row in cur.fetchall():
+            print(row)
+
+    def test_show_devices(self):
+        cur = self.conn.cursor()
+        cur.execute("show devices root.factory.**")
+        for row in cur.fetchall():
+            print(row)
+
+    def test_show_timeseries(self):
+        cur = self.conn.cursor()
+        schema = "root.factory1"
+        table = "room1.device2"
+        cur.execute("SHOW TIMESERIES %s.%s.*" % (schema, table))
+        col = []
+        col.append(row[0] for row in cur.fetchall())
+        print(col)
+        for row in cur.fetchall():
+            print(row)

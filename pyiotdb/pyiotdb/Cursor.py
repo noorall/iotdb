@@ -174,13 +174,13 @@ class Cursor(object):
 
     __next__ = next
 
-    def __iter__(self):
-        warnings.warn("DB-API extension cursor.__iter__() used")
-        return self
-
     def close(self):
         self.__is_close = True
         self.__result = None
+
+    def __iter__(self):
+        warnings.warn("DB-API extension cursor.__iter__() used")
+        return self
 
     def __enter__(self):
         return self
