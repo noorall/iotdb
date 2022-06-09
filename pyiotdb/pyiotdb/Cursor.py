@@ -14,12 +14,13 @@ import warnings
 class Cursor(object):
     SUCCESS_CODE = 200
 
-    def __init__(self, connection, client, session_id, statement_id, sqlalchemy_mode):
+    def __init__(self, connection, client, session_id, statement_id, sqlalchemy_mode, fetch_size):
         self.__connection = connection
         self.__client = client
         self.__session_id = session_id
         self.__statement_id = statement_id
         self.__sqlalchemy_mode = sqlalchemy_mode
+        self.__fetch_size = fetch_size
         self.__arraysize = 1
         self.__is_close = False
         self.__result = None
@@ -86,7 +87,7 @@ class Cursor(object):
                     sql_seqs.append(seq)
             sql = "\n".join(sql_seqs)
 
-        request = TSExecuteStatementReq(self.__session_id, sql, self.__statement_id)
+        request = TSExecuteStatementReq(self.__session_id, sql, self.__statement_id, self.__fetch_size, 0)
         try:
             resp: TSExecuteStatementResp = self.__client.executeStatement(request)
             if resp.status.code == Cursor.SUCCESS_CODE:
@@ -103,6 +104,7 @@ class Cursor(object):
                             resp.queryDataSet,
                             resp.ignoreTimeStamp,
                     ) as data_set:
+
                         data = data_set.todf()
 
                         if self.__sqlalchemy_mode is True and "Time" in data.columns:

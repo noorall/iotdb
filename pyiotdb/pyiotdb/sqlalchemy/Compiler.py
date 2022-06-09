@@ -71,7 +71,7 @@ class IoTDBCompiler(compiler.SQLCompiler):
 
         order_by = select._order_by_clause._compiler_dispatch(self, **kw)
         if "Time" in order_by:
-            return " ORDER BY " + order_by
+            return " ORDER BY " + order_by.replace('"', "")
         else:
             return ""
 

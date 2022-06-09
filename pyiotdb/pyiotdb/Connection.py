@@ -154,7 +154,8 @@ class Connection(object):
         pass
 
     def cursor(self):
-        return Cursor(self, self.__client, self.__session_id, self.__statement_id, self.__sqlalchemy_mode)
+        return Cursor(self, self.__client, self.__session_id, self.__statement_id, self.__sqlalchemy_mode,
+                      self.__fetch_size)
 
     @property
     def client(self):

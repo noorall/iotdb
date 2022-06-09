@@ -48,9 +48,7 @@ class CursorTestCase(unittest.TestCase):
         cur = self.conn.cursor()
         schema = "root.factory1"
         table = "room1.device2"
-        cur.execute('SELECT temperature AS temperature, status AS status FROM root.factory.room2.device1 WHERE temperature < 40 ORDER BY Time DESC LIMIT 10000')
-        col = []
-        col.append(row[0] for row in cur.fetchall())
-        print(col)
+        cur.execute(
+            'SELECT temperature AS temperature, status AS status FROM root.factory.room2.device1 WHERE temperature < 40 ORDER BY Time DESC LIMIT 10000')
         for row in cur.fetchall():
             print(row)

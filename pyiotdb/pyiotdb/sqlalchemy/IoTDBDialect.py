@@ -32,11 +32,9 @@ class IoTDBDialect(default.DefaultDialect):
 
     if hasattr(String, "RETURNS_UNICODE"):
         returns_unicode_strings = String.RETURNS_UNICODE
-
     else:
         def _check_unicode_returns(self, connection, additional_tests=None):
             return True
-
         _check_unicode_returns = _check_unicode_returns
 
     def _get_default_schema_name(self, connection):
