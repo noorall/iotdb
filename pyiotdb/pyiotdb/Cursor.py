@@ -14,11 +14,12 @@ import warnings
 class Cursor(object):
     SUCCESS_CODE = 200
 
-    def __init__(self, connection, client, session_id, statement_id):
+    def __init__(self, connection, client, session_id, statement_id, sqlalchemy_mode):
         self.__connection = connection
         self.__client = client
         self.__session_id = session_id
         self.__statement_id = statement_id
+        self.__sqlalchemy_mode = sqlalchemy_mode
         self.__arraysize = 1
         self.__is_close = False
         self.__result = None
@@ -37,7 +38,7 @@ class Cursor(object):
 
         for i in range(len(col_names)):
             description.append((col_names[i],
-                                col_types[i].value,
+                                None if self.__sqlalchemy_mode is True else col_types[i].value,
                                 None,
                                 None,
                                 None,
@@ -74,28 +75,49 @@ class Cursor(object):
         else:
             sql = operation % parameters
 
+        if self.__sqlalchemy_mode is True:
+            sql_seqs = []
+            time_indexs = []
+            seqs = sql.split("\n")
+            for seq in seqs:
+                if seq.find("FROM Time Index") >= 0:
+                    time_indexs = [int(index) for index in seq.replace("FROM Time Index", "").split()]
+                else:
+                    sql_seqs.append(seq)
+            sql = "\n".join(sql_seqs)
+
         request = TSExecuteStatementReq(self.__session_id, sql, self.__statement_id)
         try:
             resp: TSExecuteStatementResp = self.__client.executeStatement(request)
             if resp.status.code == Cursor.SUCCESS_CODE:
                 if resp.columns is not None:
                     with SessionDataSet(
-                        sql,
-                        resp.columns,
-                        resp.dataTypeList,
-                        resp.columnNameIndexMap,
-                        resp.queryId,
-                        self.__client,
-                        self.__statement_id,
-                        self.__session_id,
-                        resp.queryDataSet,
-                        resp.ignoreTimeStamp,
+                            sql,
+                            resp.columns,
+                            resp.dataTypeList,
+                            resp.columnNameIndexMap,
+                            resp.queryId,
+                            self.__client,
+                            self.__statement_id,
+                            self.__session_id,
+                            resp.queryDataSet,
+                            resp.ignoreTimeStamp,
                     ) as data_set:
+                        data = data_set.todf()
+
+                        if self.__sqlalchemy_mode is True and "Time" in data.columns:
+                            time_column = data.columns[0]
+                            time_column_value = data.Time
+                            del data[time_column]
+                            for index in time_indexs:
+                                data.insert(index, time_column + str(index), time_column_value)
+
                         self.__result = {
-                            "col_names": data_set.get_column_names(),
+                            "col_names": data.columns.tolist(),
                             "col_types": data_set.get_column_types(),
-                            "rows": data_set.todf().values.tolist()
+                            "rows": data.values.tolist()
                         }
+
                 else:
                     self.__result = {
                         "col_names": None,

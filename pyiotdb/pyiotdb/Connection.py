@@ -29,18 +29,20 @@ class Connection(object):
     DEFAULT_ZONE_ID = time.strftime("%z")
 
     def __init__(
-        self,
-        host,
-        port,
-        username=DEFAULT_USER,
-        password=DEFAULT_PASSWORD,
-        fetch_size=DEFAULT_FETCH_SIZE,
-        zone_id=DEFAULT_ZONE_ID,
+            self,
+            host,
+            port,
+            username=DEFAULT_USER,
+            password=DEFAULT_PASSWORD,
+            sqlalchemy_mode=False,
+            fetch_size=DEFAULT_FETCH_SIZE,
+            zone_id=DEFAULT_ZONE_ID,
     ):
         self.__host = host
         self.__port = port
         self.__user = username
         self.__password = password
+        self.__sqlalchemy_mode = sqlalchemy_mode
         self.__fetch_size = fetch_size
         self.__is_close = True
         self.__transport = None
@@ -152,7 +154,7 @@ class Connection(object):
         pass
 
     def cursor(self):
-        return Cursor(self, self.__client, self.__session_id, self.__statement_id)
+        return Cursor(self, self.__client, self.__session_id, self.__statement_id, self.__sqlalchemy_mode)
 
     @property
     def client(self):

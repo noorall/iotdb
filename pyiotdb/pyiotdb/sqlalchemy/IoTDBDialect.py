@@ -46,6 +46,13 @@ class IoTDBDialect(default.DefaultDialect):
     def _dialect_specific_select_one(self):
         return "SHOW VERSION"
 
+    def create_connect_args(self, url):
+        # inherits the docstring from interfaces.Dialect.create_connect_args
+        opts = url.translate_connect_args()
+        opts.update(url.query)
+        opts.update({"sqlalchemy_mode": True})
+        return [[], opts]
+
     @classmethod
     def dbapi(cls):
         return pyiotdb

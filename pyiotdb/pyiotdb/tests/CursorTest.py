@@ -5,7 +5,7 @@ from pyiotdb import connect
 
 class CursorTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.conn = connect("127.0.0.1", "6667")
+        self.conn = connect("127.0.0.1", "6667", "root", "root", True)
 
     def test_executemany(self):
         cur = self.conn.cursor()
@@ -35,11 +35,20 @@ class CursorTestCase(unittest.TestCase):
         for row in cur.fetchall():
             print(row)
 
+    def test_sqlalchemy_mode(self):
+        query = "select status \n" \
+                "Time Position 1 3 5 \n" \
+                "from root.factory.room1.device2"
+        cur = self.conn.cursor()
+        cur.execute(query)
+        for row in cur.fetchall():
+            print(row)
+
     def test_show_timeseries(self):
         cur = self.conn.cursor()
         schema = "root.factory1"
         table = "room1.device2"
-        cur.execute("SHOW TIMESERIES %s.%s.*" % (schema, table))
+        cur.execute('SELECT temperature AS temperature, status AS status FROM root.factory.room2.device1 WHERE temperature < 40 ORDER BY Time DESC LIMIT 10000')
         col = []
         col.append(row[0] for row in cur.fetchall())
         print(col)
