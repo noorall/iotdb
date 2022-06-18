@@ -45,7 +45,7 @@ setuptools.setup(
         "numpy>=1.0.0",
         "testcontainers>=2.0.0",
         "sqlalchemy>=1.3.16, <1.4, !=1.3.21",
-        "sqlalchemy-utils>=0.37.8, <0.38",
+        "sqlalchemy-utils>=0.36.6,<0.37",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
