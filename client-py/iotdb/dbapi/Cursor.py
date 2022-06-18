@@ -138,7 +138,7 @@ class Cursor(object):
             if data_set:
                 data = data_set.todf()
 
-                if self.__sqlalchemy_mode and time_index:
+                if self.__sqlalchemy_mode and "Time" in data.columns:
                     time_column = data.columns[0]
                     time_column_value = data.Time
                     del data[time_column]
