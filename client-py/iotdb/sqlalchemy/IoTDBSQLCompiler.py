@@ -52,6 +52,12 @@ class IoTDBSQLCompiler(SQLCompiler):
         1. IoTDB does not support querying Time as a measurement name (e.g. select Time from root.storagegroup.device)
         2. IoTDB does not support path.measurement format to determine a column (e.g. select root.storagegroup.device.temperature from root.storagegroup.device)
         """
+
+        # Special processing for virtual tables
+        for f in select.froms:
+            if f.description == "virtual_table":
+                return str(f)
+
         needs_nested_translation = (
                 select.use_labels
                 and not nested_join_translation
