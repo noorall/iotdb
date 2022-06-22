@@ -20,17 +20,15 @@ import logging
 import warnings
 
 from iotdb.Session import Session
-
 from .Exceptions import ProgrammingError
 
 logger = logging.getLogger("IoTDB")
 
 
 class Cursor(object):
-    def __init__(self, connection, session: Session, sqlalchemy_mode):
+    def __init__(self, connection, session: Session):
         self.__connection = connection
         self.__session = session
-        self.__sqlalchemy_mode = sqlalchemy_mode
         self.__arraysize = 1
         self.__is_close = False
         self.__result = None
@@ -110,24 +108,27 @@ class Cursor(object):
         else:
             sql = operation % parameters
 
+        sqlalchemy_mode = False
         time_index = []
         time_names = []
-        if self.__sqlalchemy_mode:
-            sql_seqs = []
-            seqs = sql.split("\n")
-            for seq in seqs:
-                if seq.find("FROM Time Index") >= 0:
-                    time_index = [
-                        int(index)
-                        for index in seq.replace("FROM Time Index", "").split()
-                    ]
-                elif seq.find("FROM Time Name") >= 0:
-                    time_names = [
-                        name for name in seq.replace("FROM Time Name", "").split()
-                    ]
-                else:
-                    sql_seqs.append(seq)
-            sql = "\n".join(sql_seqs)
+        sql_seqs = []
+        seqs = sql.split("\n")
+        for seq in seqs:
+            if seq.find("FROM Time Index") >= 0:
+                time_index = [
+                    int(index)
+                    for index in seq.replace("FROM Time Index", "").split()
+                ]
+            elif seq.find("FROM Time Name") >= 0:
+                time_names = [
+                    name for name in seq.replace("FROM Time Name", "").split()
+                ]
+            elif seq.find("FROM SQLAlchemy Mode") >= 0:
+                sqlalchemy_mode = True
+            else:
+                sql_seqs.append(seq)
+
+        sql = "\n".join(sql_seqs)
 
         try:
             data_set = self.__session.execute_statement(sql)
@@ -138,7 +139,7 @@ class Cursor(object):
             if data_set:
                 data = data_set.todf()
 
-                if self.__sqlalchemy_mode and "Time" in data.columns:
+                if sqlalchemy_mode and "Time" in data.columns:
                     time_column = data.columns[0]
                     time_column_value = data.Time
                     del data[time_column]
