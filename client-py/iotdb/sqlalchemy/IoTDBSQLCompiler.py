@@ -259,3 +259,6 @@ class IoTDBSQLCompiler(SQLCompiler):
             text = text.replace("%", "%%")
         text = text.replace(self.preparer.initial_quote, "")
         return text
+
+    def delete_table_clause(self, delete_stmt, from_table, extra_froms):
+        return from_table._compiler_dispatch(self, asfrom=True, iscrud=True) + ".*"

@@ -21,10 +21,10 @@ from sqlalchemy.engine import default
 from sqlalchemy.sql.sqltypes import String
 
 from iotdb import dbapi
-
+from .IoTDBDDLCompiler import IoTDBDDLCompiler
+from .IoTDBIdentifierPreparer import IoTDBIdentifierPreparer
 from .IoTDBSQLCompiler import IoTDBSQLCompiler
 from .IoTDBTypeCompiler import IoTDBTypeCompiler
-from .IoTDBIdentifierPreparer import IoTDBIdentifierPreparer
 
 TYPES_MAP = {
     "BOOLEAN": types.Boolean,
@@ -41,6 +41,7 @@ class IoTDBDialect(default.DefaultDialect):
     name = "iotdb"
     driver = "iotdb-python"
     statement_compiler = IoTDBSQLCompiler
+    ddl_compiler = IoTDBDDLCompiler
     type_compiler = IoTDBTypeCompiler
     preparer = IoTDBIdentifierPreparer
     convert_unicode = True
@@ -52,6 +53,8 @@ class IoTDBDialect(default.DefaultDialect):
     supports_right_nested_joins = False
     description_encoding = None
 
+    postfetch_lastrowid = False
+    
     if hasattr(String, "RETURNS_UNICODE"):
         returns_unicode_strings = String.RETURNS_UNICODE
     else:
