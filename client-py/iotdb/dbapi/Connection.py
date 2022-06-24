@@ -36,10 +36,8 @@ class Connection(object):
         fetch_size=Session.DEFAULT_FETCH_SIZE,
         zone_id=Session.DEFAULT_ZONE_ID,
         enable_rpc_compression=False,
-        sqlalchemy_mode=False,
     ):
         self.__session = Session(host, port, username, password, fetch_size, zone_id)
-        self.__sqlalchemy_mode = sqlalchemy_mode
         self.__is_close = True
         try:
             self.__session.open(enable_rpc_compression)
@@ -61,7 +59,7 @@ class Connection(object):
         Return a new Cursor Object using the connection.
         """
         if not self.__is_close:
-            return Cursor(self, self.__session, self.__sqlalchemy_mode)
+            return Cursor(self, self.__session)
         else:
             raise ProgrammingError("Connection closed")
 

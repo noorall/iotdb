@@ -52,7 +52,7 @@ class Cursor(object):
             description.append(
                 (
                     col_names[i],
-                    None if self.__sqlalchemy_mode is True else col_types[i].value,
+                    col_types[i].value,
                     None,
                     None,
                     None,
@@ -138,6 +138,7 @@ class Cursor(object):
 
             if data_set:
                 data = data_set.todf()
+                col_types = data_set.get_column_types()
 
                 if sqlalchemy_mode and "Time" in data.columns:
                     time_column = data.columns[0]
@@ -145,9 +146,9 @@ class Cursor(object):
                     del data[time_column]
                     for i in range(len(time_index)):
                         data.insert(time_index[i], time_names[i], time_column_value)
+                        col_types.insert(time_index[i], col_types[0])
 
                 col_names = data.columns.tolist()
-                col_types = data_set.get_column_types()
                 rows = data.values.tolist()
                 data_set.close_operation_handle()
 
@@ -271,6 +272,17 @@ class Cursor(object):
         Not supported method.
         """
         pass
+
+    @property
+    def lastrowid(self):
+        """
+        This read-only attribute provides the rowid of the last
+        modified row (most databases return a rowid only when a single
+        INSERT operation is performed). If the operation does not set
+        a rowid or if the database does not support rowids, this
+        attribute should be set to None.
+        """
+        return None
 
     def __iter__(self):
         """
