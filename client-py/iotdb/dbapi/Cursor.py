@@ -33,34 +33,21 @@ class Cursor(object):
         self.__is_close = False
         self.__result = None
         self.__rows = None
+        self.__result = None
         self.__rowcount = -1
+        self.__sqlalchemy_mode = False
+        self.__time_index = []
+        self.__data_set = None
+        self.__description = None
 
     @property
     def description(self):
         """
         This read-only attribute is a sequence of 7-item sequences.
         """
-        if self.__is_close or not self.__result["col_names"]:
+        if self.__is_close:
             return
-
-        description = []
-
-        col_names = self.__result["col_names"]
-        col_types = self.__result["col_types"]
-
-        for i in range(len(col_names)):
-            description.append(
-                (
-                    col_names[i],
-                    col_types[i].value,
-                    None,
-                    None,
-                    None,
-                    None,
-                    col_names[i] == "Time",
-                )
-            )
-        return tuple(description)
+        return self.__description
 
     @property
     def arraysize(self):
@@ -87,9 +74,9 @@ class Cursor(object):
         .execute*() produced (for DQL statements like ``SELECT``) or affected
         (for DML statements like ``DELETE`` or ``INSERT`` return 0 if successful, -1 if unsuccessful).
         """
-        if self.__is_close or self.__result is None or "row_count" not in self.__result:
+        if self.__is_close:
             return -1
-        return self.__result.get("row_count", -1)
+        return self.__rowcount
 
     def execute(self, operation, parameters=None):
         """
@@ -108,14 +95,17 @@ class Cursor(object):
         else:
             sql = operation % parameters
 
-        sqlalchemy_mode = False
-        time_index = []
+        self.__sqlalchemy_mode = False
+        self.__time_index = []
+        self.__result = None
+        self.__rowcount = -1
+
         time_names = []
         sql_seqs = []
         seqs = sql.split("\n")
         for seq in seqs:
             if seq.find("FROM Time Index") >= 0:
-                time_index = [
+                self.__time_index = [
                     int(index)
                     for index in seq.replace("FROM Time Index", "").split()
                 ]
@@ -124,49 +114,19 @@ class Cursor(object):
                     name for name in seq.replace("FROM Time Name", "").split()
                 ]
             elif seq.find("FROM SQLAlchemy Mode") >= 0:
-                sqlalchemy_mode = True
+                self.__sqlalchemy_mode = True
             else:
                 sql_seqs.append(seq)
 
         sql = "\n".join(sql_seqs)
 
         try:
-            data_set = self.__session.execute_statement(sql)
-            col_names = None
-            col_types = None
-            rows = []
-
-            if data_set:
-                data = data_set.todf()
-                col_types = data_set.get_column_types()
-
-                if sqlalchemy_mode and "Time" in data.columns:
-                    time_column = data.columns[0]
-                    time_column_value = data.Time
-                    del data[time_column]
-                    for i in range(len(time_index)):
-                        data.insert(time_index[i], time_names[i], time_column_value)
-                        col_types.insert(time_index[i], col_types[0])
-
-                col_names = data.columns.tolist()
-                rows = data.values.tolist()
-                data_set.close_operation_handle()
-
-            self.__result = {
-                "col_names": col_names,
-                "col_types": col_types,
-                "rows": rows,
-                "row_count": len(rows),
-            }
-        except Exception:
+            self.__result = self.__session.execute_statement(sql)
+            self.__rowcount = 1
+        except RuntimeError:
             logger.error("failed to execute statement:{}".format(sql))
-            self.__result = {
-                "col_names": None,
-                "col_types": None,
-                "rows": [],
-                "row_count": -1,
-            }
-        self.__rows = iter(self.__result["rows"])
+
+        self.generate_description(time_names)
 
     def executemany(self, operation, seq_of_parameters=None):
         """
@@ -248,7 +208,10 @@ class Cursor(object):
                 "No result available. execute() or executemany() must be called first."
             )
         elif not self.__is_close:
-            return next(self.__rows)
+            if self.__result.has_next():
+                return self.generate_row(self.__result.next())
+            else:
+                raise StopIteration
         else:
             raise ProgrammingError("Cursor closed!")
 
@@ -299,3 +262,43 @@ class Cursor(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    def generate_row(self, record):
+        timestamp = record.get_timestamp()
+        fields = [field.get_object_value(field.get_data_type()) for field in record.get_fields()]
+        if self.__sqlalchemy_mode:
+            for i in self.__time_index:
+                fields.insert(i, timestamp)
+        elif timestamp:
+            fields.insert(0, timestamp)
+        return tuple(fields)
+
+    def generate_description(self, time_names: list):
+        if self.__is_close or not self.__result:
+            return None
+
+        description = []
+
+        col_types = self.__result.get_column_types()
+        col_names = self.__result.get_column_names()
+        if self.__sqlalchemy_mode and "Time" in col_names:
+            time_type = col_types[0]
+            del col_names[0]
+            del col_types[0]
+            for i in range(len(self.__time_index)):
+                col_names.insert(self.__time_index[i], time_names[i])
+                col_types.insert(self.__time_index[i], time_type)
+
+        for i in range(len(col_names)):
+            description.append(
+                (
+                    col_names[i],
+                    col_types[i].value,
+                    None,
+                    None,
+                    None,
+                    None,
+                    col_names[i] == "Time",
+                )
+            )
+        self.__description = tuple(description)
