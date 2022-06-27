@@ -42,7 +42,7 @@ def test_cursor():
     #     db: IoTDBContainer
     #     conn = connect(db.get_container_host_ip(), db.get_exposed_port(6667))
     if True:
-        conn = connect("127.0.0.1",6667)
+        conn = connect("127.0.0.1", 6667)
         cursor: Cursor = conn.cursor()
 
         # execute test

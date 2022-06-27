@@ -40,12 +40,12 @@ class IoTDBIdentifierPreparer(IdentifierPreparer):
         return result
 
     def format_column(
-            self,
-            column,
-            use_table=False,
-            name=None,
-            table_name=None,
-            use_schema=False,
+        self,
+        column,
+        use_table=False,
+        name=None,
+        table_name=None,
+        use_schema=False,
     ):
         """Prepare a quoted column name."""
 
@@ -53,11 +53,7 @@ class IoTDBIdentifierPreparer(IdentifierPreparer):
             name = column.name
         if not getattr(column, "is_literal", False):
             if use_table:
-                return (
-                        table_name
-                        + "."
-                        + name
-                )
+                return table_name + "." + name
             else:
                 return name
         else:
@@ -65,10 +61,6 @@ class IoTDBIdentifierPreparer(IdentifierPreparer):
             # which shouldn't get quoted
 
             if use_table:
-                return (
-                        table_name
-                        + "."
-                        + name
-                )
+                return table_name + "." + name
             else:
                 return name

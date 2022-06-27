@@ -106,8 +106,7 @@ class Cursor(object):
         for seq in seqs:
             if seq.find("FROM Time Index") >= 0:
                 self.__time_index = [
-                    int(index)
-                    for index in seq.replace("FROM Time Index", "").split()
+                    int(index) for index in seq.replace("FROM Time Index", "").split()
                 ]
             elif seq.find("FROM Time Name") >= 0:
                 time_names = [
@@ -265,7 +264,10 @@ class Cursor(object):
 
     def generate_row(self, record):
         timestamp = record.get_timestamp()
-        fields = [field.get_object_value(field.get_data_type()) for field in record.get_fields()]
+        fields = [
+            field.get_object_value(field.get_data_type())
+            for field in record.get_fields()
+        ]
         if self.__sqlalchemy_mode:
             for i in self.__time_index:
                 fields.insert(i, timestamp)

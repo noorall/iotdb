@@ -54,7 +54,7 @@ class IoTDBDialect(default.DefaultDialect):
     description_encoding = None
 
     postfetch_lastrowid = False
-    
+
     if hasattr(String, "RETURNS_UNICODE"):
         returns_unicode_strings = String.RETURNS_UNICODE
     else:
