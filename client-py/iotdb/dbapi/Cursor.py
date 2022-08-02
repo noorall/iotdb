@@ -20,6 +20,7 @@ import logging
 import warnings
 
 from iotdb.Session import Session
+from iotdb.utils.IoTDBConstants import TSDataType
 from .Exceptions import ProgrammingError
 
 logger = logging.getLogger("IoTDB")
@@ -265,7 +266,9 @@ class Cursor(object):
     def generate_row(self, record):
         timestamp = record.get_timestamp()
         fields = [
-            field.get_object_value(field.get_data_type())
+            field.get_string_value()
+            if field.get_data_type() and field.get_data_type() == TSDataType.TEXT
+            else field.get_object_value(field.get_data_type())
             for field in record.get_fields()
         ]
         if self.__sqlalchemy_mode:
